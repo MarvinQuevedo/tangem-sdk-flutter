@@ -5,7 +5,6 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Base64
 import com.tangem.*
-import com.tangem.common.biometric.BiometricManager
 import com.tangem.common.core.Config
 import com.tangem.common.core.ScanTagImage
 import com.tangem.common.core.ScanTagImage.GenericCard
@@ -17,6 +16,7 @@ import com.tangem.sdk.DefaultSessionViewDelegate
 import com.tangem.sdk.NfcLifecycleObserver
 import com.tangem.sdk.extensions.getWordlist
 import com.tangem.sdk.extensions.initBiometricManager
+import com.tangem.sdk.extensions.initKeystoreManager
 import com.tangem.sdk.nfc.NfcManager
 import com.tangem.sdk.storage.create
 import io.flutter.embedding.android.FlutterFragmentActivity
@@ -29,6 +29,7 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import java.lang.ref.WeakReference
+
 
 /** TangemSdkPlugin */
 class TangemSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
@@ -60,9 +61,10 @@ class TangemSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         val viewDelegate = createViewDelegate(activity, nfcManager)
         val storage = SecureStorage.create(activity)
         val config = Config()
-        val biometricManager: BiometricManager = TangemSdk.initBiometricManager(activity, storage)
+        val biometricManager = TangemSdk.initBiometricManager(activity)
         val wordlist: Wordlist = Wordlist.getWordlist(activity)
-        sdk = TangemSdk(nfcManager.reader, viewDelegate, storage, biometricManager, wordlist, config)
+        val keystoreManager = TangemSdk.initKeystoreManager(biometricManager, storage)
+        sdk = TangemSdk(nfcManager.reader, viewDelegate, storage, wordlist, config, biometricManager, keystoreManager)
         nfcManager.onStart()
     }
 
@@ -78,7 +80,7 @@ class TangemSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     }
 
     private fun createViewDelegate(activity: Activity, nfcManager: NfcManager): SessionViewDelegate {
-        return DefaultSessionViewDelegate(nfcManager, nfcManager.reader, activity)
+        return DefaultSessionViewDelegate(nfcManager,  activity)
     }
 
     override fun onReattachedToActivityForConfigChanges(pluginBinding: ActivityPluginBinding) {
