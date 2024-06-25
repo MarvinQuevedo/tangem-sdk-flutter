@@ -14,7 +14,24 @@ public class SwiftTangemSdkPlugin: NSObject, FlutterPlugin {
     @available(iOS 13, *)
     private var sdk: TangemSdk {
         if _sdk == nil {
-            _sdk = TangemSdk()
+            var config = Config()
+            config.linkedTerminal = false
+            config.allowUntrustedCards = true
+        
+            config.filter.allowedCardTypes = FirmwareVersion.FirmwareType.allCases
+          
+            config.defaultDerivationPaths = [
+                .secp256k1: [
+                    try! DerivationPath(rawPath: "m/44'/0'/0'/0/0"),
+                    try! DerivationPath(rawPath: "m/44'/195'/0'/0/0"),
+                    try! DerivationPath(rawPath: "m/44'/60'/0'/0/0")
+                ],
+               
+                .ed25519: [try! DerivationPath(rawPath: "m/44'/501'/0'")],
+            ]
+            let tangemSdk  = TangemSdk()
+            tangemSdk.config = config
+            _sdk = tangemSdk
         }
         return _sdk as! TangemSdk
     }
