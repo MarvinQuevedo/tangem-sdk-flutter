@@ -5,6 +5,8 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Base64
 import com.tangem.*
+import com.tangem.common.card.EllipticCurve
+import com.tangem.common.card.FirmwareVersion
 import com.tangem.common.core.Config
 import com.tangem.common.core.ScanTagImage
 import com.tangem.common.core.ScanTagImage.GenericCard
@@ -12,11 +14,13 @@ import com.tangem.common.extensions.hexToBytes
 import com.tangem.common.json.MoshiJsonConverter
 import com.tangem.common.services.secure.SecureStorage
 import com.tangem.crypto.bip39.Wordlist
+import com.tangem.crypto.hdWallet.DerivationPath
 import com.tangem.sdk.DefaultSessionViewDelegate
 import com.tangem.sdk.NfcLifecycleObserver
 import com.tangem.sdk.extensions.getWordlist
 import com.tangem.sdk.extensions.initBiometricManager
 import com.tangem.sdk.extensions.initKeystoreManager
+import com.tangem.sdk.extensions.initNfcManager
 import com.tangem.sdk.nfc.NfcManager
 import com.tangem.sdk.storage.create
 import io.flutter.embedding.android.FlutterFragmentActivity
@@ -57,14 +61,31 @@ class TangemSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         val activity = pluginBinding.activity as FlutterFragmentActivity
         wActivity = WeakReference(activity)
 
-        nfcManager = createNfcManager(pluginBinding)
-        val viewDelegate = createViewDelegate(activity, nfcManager)
-        val storage = SecureStorage.create(activity)
-        val config = Config()
+        val config = Config().apply {
+            linkedTerminal = false
+            allowUntrustedCards = true
+            filter.allowedCardTypes = FirmwareVersion.FirmwareType.values().toList()
+            defaultDerivationPaths = mutableMapOf(
+                    EllipticCurve.Secp256k1 to listOf(
+                            DerivationPath(rawPath = "m/44'/0'/0'/0/0"),
+                            DerivationPath(rawPath = "m/44'/195'/0'/0/0"),
+                            DerivationPath(rawPath = "m/44'/195'/0'/0/0"),
+                            DerivationPath(rawPath = "m/44'/60'/0'/0/0"),
+                    ),
+                    EllipticCurve.Ed25519 to listOf(
+                            DerivationPath(rawPath = "m/44'/501'/0'"),
+                    )
+            )
+        }
+        val secureStorage = SecureStorage.create(activity)
+        nfcManager = TangemSdk.initNfcManager(activity)
+
+        val viewDelegate = DefaultSessionViewDelegate(nfcManager,  activity)
+        viewDelegate.sdkConfig = config
         val biometricManager = TangemSdk.initBiometricManager(activity)
         val wordlist: Wordlist = Wordlist.getWordlist(activity)
-        val keystoreManager = TangemSdk.initKeystoreManager(biometricManager, storage)
-        sdk = TangemSdk(nfcManager.reader, viewDelegate, storage, wordlist, config, biometricManager, keystoreManager)
+        val keystoreManager = TangemSdk.initKeystoreManager(biometricManager, secureStorage)
+        sdk = TangemSdk(nfcManager.reader, viewDelegate, secureStorage, wordlist, config, biometricManager, keystoreManager)
         nfcManager.onStart()
     }
 
@@ -79,9 +100,7 @@ class TangemSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         }
     }
 
-    private fun createViewDelegate(activity: Activity, nfcManager: NfcManager): SessionViewDelegate {
-        return DefaultSessionViewDelegate(nfcManager,  activity)
-    }
+
 
     override fun onReattachedToActivityForConfigChanges(pluginBinding: ActivityPluginBinding) {
         wActivity = WeakReference(pluginBinding.activity)
