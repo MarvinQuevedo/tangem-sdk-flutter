@@ -23,6 +23,7 @@ public class SwiftTangemSdkPlugin: NSObject, FlutterPlugin {
             config.defaultDerivationPaths = [
                 .secp256k1: [
                     try! DerivationPath(rawPath: "m/44'/0'/0'/0/0"),
+                    try! DerivationPath(rawPath: "m/84'/0'/0'/0/0"),
                     try! DerivationPath(rawPath: "m/44'/195'/0'/0/0"),
                     try! DerivationPath(rawPath: "m/44'/60'/0'/0/0")
                 ],

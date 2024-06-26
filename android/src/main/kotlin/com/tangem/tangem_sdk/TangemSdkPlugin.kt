@@ -68,8 +68,8 @@ class TangemSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             defaultDerivationPaths = mutableMapOf(
                     EllipticCurve.Secp256k1 to listOf(
                             DerivationPath(rawPath = "m/44'/0'/0'/0/0"),
-                            DerivationPath(rawPath = "m/44'/195'/0'/0/0"),
-                            DerivationPath(rawPath = "m/44'/195'/0'/0/0"),
+                            DerivationPath(rawPath = "m/84'/0'/0'/0/0"),
+                            DerivationPath(rawPath = "m/44'/195'/0'/0/0"), 
                             DerivationPath(rawPath = "m/44'/60'/0'/0/0"),
                     ),
                     EllipticCurve.Ed25519 to listOf(
