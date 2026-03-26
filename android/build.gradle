@@ -1,36 +1,16 @@
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.kapt'
+}
+
 group 'com.tangem.tangem_sdk'
 version '1.0-SNAPSHOT'
 
-buildscript {
-    ext.kotlin_version = '1.8.0'
-    repositories {
-        google()
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath 'com.android.tools.build:gradle:7.1.2'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-    }
-}
-
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-        maven {url 'https://jitpack.io'}
-    }
-}
-
-apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-kapt'
+def kotlin_version = '1.9.24'
 
 android {
-
-      if (project.android.hasProperty("namespace")) {
-            namespace 'com.tamgen.tangem_sdk_flutter'
-        }
+    namespace 'com.tamgen.tangem_sdk_flutter'
 
     compileSdkVersion 34
 
@@ -41,6 +21,24 @@ android {
 
     kotlinOptions {
         jvmTarget = '17'
+    }
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+    }
+
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        kotlinOptions {
+            jvmTarget = "17"
+        }
+    }
+
+    kapt {
+        arguments {
+            arg("jvmTarget", "17")
+        }
     }
 
     sourceSets {
@@ -55,9 +53,8 @@ android {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
-    implementation "com.github.tangem.tangem-sdk-android:android:3.9.1"
-    implementation "com.github.tangem.tangem-sdk-android:core:3.9.1"
-
+    implementation "com.tangem.tangem-sdk-kotlin:android:releases-5.35-596"
+    implementation "com.tangem.tangem-sdk-kotlin:core:releases-5.35-596"
     implementation 'com.squareup.moshi:moshi:1.12.0'
     implementation "com.squareup.moshi:moshi-kotlin:1.12.0"
     kapt("com.squareup.moshi:moshi-kotlin-codegen:1.12.0")

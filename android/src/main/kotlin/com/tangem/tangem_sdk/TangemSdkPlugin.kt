@@ -5,6 +5,8 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Base64
 import com.tangem.*
+import com.tangem.common.CardFilter
+import com.tangem.common.authentication.AuthenticationManager
 import com.tangem.common.card.EllipticCurve
 import com.tangem.common.card.FirmwareVersion
 import com.tangem.common.core.Config
@@ -16,18 +18,17 @@ import com.tangem.common.services.secure.SecureStorage
 import com.tangem.crypto.bip39.Wordlist
 import com.tangem.crypto.hdWallet.DerivationPath
 import com.tangem.sdk.DefaultSessionViewDelegate
-import com.tangem.sdk.NfcLifecycleObserver
 import com.tangem.sdk.extensions.getWordlist
-import com.tangem.sdk.extensions.initBiometricManager
+import com.tangem.sdk.extensions.initAuthenticationManager
 import com.tangem.sdk.extensions.initKeystoreManager
 import com.tangem.sdk.extensions.initNfcManager
+import com.tangem.sdk.nfc.AndroidNfcAvailabilityProvider
 import com.tangem.sdk.nfc.NfcManager
 import com.tangem.sdk.storage.create
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
-import io.flutter.embedding.engine.plugins.lifecycle.HiddenLifecycleReference
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
@@ -44,6 +45,7 @@ class TangemSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
     private lateinit var sdk: TangemSdk
     private lateinit var nfcManager: NfcManager
+    private lateinit var authenticationManager: AuthenticationManager
     private val converter = MoshiJsonConverter.default()
 
     private var replyAlreadySubmit = false
@@ -61,10 +63,12 @@ class TangemSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         val activity = pluginBinding.activity as FlutterFragmentActivity
         wActivity = WeakReference(activity)
 
-        val config = Config().apply {
-            linkedTerminal = false
-            allowUntrustedCards = true
-            filter.allowedCardTypes = FirmwareVersion.FirmwareType.values().toList()
+        val config = Config(
+            linkedTerminal = false,
+            filter = CardFilter(
+                allowedCardTypes = FirmwareVersion.FirmwareType.entries.toList(),
+            ),
+        ).apply {
             defaultDerivationPaths = mutableMapOf(
                     EllipticCurve.Secp256k1 to listOf(
                             DerivationPath(rawPath = "m/44'/0'/0'/0/0"),
@@ -79,28 +83,27 @@ class TangemSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         }
         val secureStorage = SecureStorage.create(activity)
         nfcManager = TangemSdk.initNfcManager(activity)
+        authenticationManager = TangemSdk.initAuthenticationManager(activity)
 
         val viewDelegate = DefaultSessionViewDelegate(nfcManager,  activity)
         viewDelegate.sdkConfig = config
-        val biometricManager = TangemSdk.initBiometricManager(activity)
-        val wordlist: Wordlist = Wordlist.getWordlist(activity)
-        val keystoreManager = TangemSdk.initKeystoreManager(biometricManager, secureStorage)
-        sdk = TangemSdk(nfcManager.reader, viewDelegate, secureStorage, wordlist, config, biometricManager, keystoreManager)
-        nfcManager.onStart()
+        val wordlist: Wordlist = Wordlist.getWordlist()
+        val keystoreManager = TangemSdk.initKeystoreManager(authenticationManager, secureStorage)
+        val nfcAvailabilityProvider = AndroidNfcAvailabilityProvider(activity)
+        sdk = TangemSdk(
+                reader = nfcManager.reader,
+                viewDelegate = viewDelegate,
+                nfcAvailabilityProvider = nfcAvailabilityProvider,
+                secureStorage = secureStorage,
+                authenticationManager = authenticationManager,
+                keystoreManager = keystoreManager,
+                wordlist = wordlist,
+                config = config
+        )
     }
 
     override fun onDetachedFromActivity() {
     }
-
-    private fun createNfcManager(pluginBinding: ActivityPluginBinding): NfcManager {
-        val hiddenLifecycleReference = pluginBinding.lifecycle as HiddenLifecycleReference
-        return NfcManager().apply {
-            setCurrentActivity(pluginBinding.activity)
-            hiddenLifecycleReference.lifecycle.addObserver(NfcLifecycleObserver(this))
-        }
-    }
-
-
 
     override fun onReattachedToActivityForConfigChanges(pluginBinding: ActivityPluginBinding) {
         wActivity = WeakReference(pluginBinding.activity)

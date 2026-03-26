@@ -1,11 +1,68 @@
-include ':app'
+pluginManagement {
+    def flutterSdkPath = {
+        def properties = new Properties()
+        file("local.properties").withInputStream { properties.load(it) }
+        def flutterSdkPath = properties.getProperty("flutter.sdk")
+        assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
+        return flutterSdkPath
+    }
+    settings.ext.flutterSdkPath = flutterSdkPath()
 
-def localPropertiesFile = new File(rootProject.projectDir, "local.properties")
+    includeBuild("${settings.ext.flutterSdkPath}/packages/flutter_tools/gradle")
+
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+plugins {
+    id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+    id "com.android.application" version "8.1.1" apply false
+    id "org.jetbrains.kotlin.android" version "1.9.24" apply false
+}
+
 def properties = new Properties()
+def propertiesFile = new File(rootProject.projectDir, "local.properties")
+if (propertiesFile.exists()) {
+    propertiesFile.withReader("UTF-8") { reader -> properties.load(reader) }
+}
 
-assert localPropertiesFile.exists()
-localPropertiesFile.withReader("UTF-8") { reader -> properties.load(reader) }
+def githubActor = System.getenv("GITHUB_ACTOR") ?: properties.getProperty("gpr.user")
+def githubToken = System.getenv("GITHUB_TOKEN") ?: properties.getProperty("gpr.key")
+def hasGithubCredentials = githubActor && githubToken
 
-def flutterSdkPath = properties.getProperty("flutter.sdk")
-assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
-apply from: "$flutterSdkPath/packages/flutter_tools/gradle/app_plugin_loader.gradle"
+if (hasGithubCredentials) {
+    println("Tangem Maven auth: using " + (System.getenv("GITHUB_TOKEN") ? "environment variables" : "local.properties"))
+} else {
+    throw new GradleException(
+        "Missing GitHub Packages credentials for Tangem SDK. " +
+        "Set GITHUB_ACTOR and GITHUB_TOKEN env vars (preferred) " +
+        "or gpr.user and gpr.key in example/android/local.properties."
+    )
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories {
+        google {
+            content {
+                includeGroupAndSubgroups("androidx")
+                includeGroupAndSubgroups("com.android")
+                includeGroupAndSubgroups("com.google")
+            }
+        }
+        mavenCentral()
+        maven { url = uri("https://storage.googleapis.com/download.flutter.io") }
+        maven {
+            url = uri("https://maven.pkg.github.com/tangem/tangem-sdk-android")
+            credentials {
+                username = githubActor
+                password = githubToken
+            }
+        }
+    }
+}
+
+include ":app"
