@@ -2,8 +2,8 @@ PODS:
   - Flutter (1.0.0)
   - tangem_sdk (0.8.0):
     - Flutter
-    - TangemSdk (~> 3.9.0)
-  - TangemSdk (3.9.0)
+    - TangemSdk (~> 3.10.0)
+  - TangemSdk (3.10.0)
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
@@ -20,10 +20,10 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/tangem_sdk/ios"
 
 SPEC CHECKSUMS:
-  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
-  tangem_sdk: a38b9eb61986fd291361a05d33d299428835d1b4
-  TangemSdk: c141ae9d17337c53d892142e94247225d59b5c09
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  tangem_sdk: 61546d2d621960205fa8b7f85a64ab6c997fa1eb
+  TangemSdk: 4a188873f9dbed6340cca9ad6a010240af6df432
 
-PODFILE CHECKSUM: 4e8f8b2be68aeea4c0d5beb6ff1e79fface1d048
+PODFILE CHECKSUM: 7423b152405195a3e9efe186877a370ded170255
 
-COCOAPODS: 1.15.2
+COCOAPODS: 1.16.2
