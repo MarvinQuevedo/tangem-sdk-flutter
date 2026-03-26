@@ -1,5 +1,7 @@
 import Flutter
 import UIKit
+
+#if canImport(TangemSdk)
 import TangemSdk
 
 public class SwiftTangemSdkPlugin: NSObject, FlutterPlugin {
@@ -127,3 +129,22 @@ fileprivate extension FlutterError {
         FlutterError(code: genericCode, message: "Tangem SDK available from iOS 13", details: nil)
     }
 }
+#else
+
+public class SwiftTangemSdkPlugin: NSObject, FlutterPlugin {
+    public static func register(with registrar: FlutterPluginRegistrar) {
+        let channel = FlutterMethodChannel(name: "tangem_sdk", binaryMessenger: registrar.messenger())
+        let instance = SwiftTangemSdkPlugin()
+        registrar.addMethodCallDelegate(instance, channel: channel)
+    }
+
+    public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        result(FlutterError(
+            code: "9999",
+            message: "Tangem SDK is unavailable in this build target",
+            details: nil
+        ))
+    }
+}
+
+#endif
