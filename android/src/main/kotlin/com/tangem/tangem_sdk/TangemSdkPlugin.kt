@@ -82,6 +82,7 @@ class TangemSdkPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             )
         }
         val secureStorage = SecureStorage.create(activity)
+        //val newSecureStore = AndroidSecureStorageV2(activity, true)
         nfcManager = TangemSdk.initNfcManager(activity)
         authenticationManager = TangemSdk.initAuthenticationManager(activity)
 
